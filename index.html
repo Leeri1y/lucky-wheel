@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="description" content="幸运转盘 - 随机抽取1-49的幸运数字">
+    <title>发财幸运大转盘</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .wheel-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            margin-bottom: 20px;
+        }
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #333;
+            position: relative;
+            background: #fff;
+            transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+        .center-pointer {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 120px;
+            z-index: 2;
+        }
+        .pointer {
+            width: 4px;
+            height: 100%;
+            background: #ff0000;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .center-circle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 4px solid #333;
+            border-radius: 50%;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .number {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform-origin: 0 0;
+            font-size: 18px;
+            color: #333;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3px 8px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-display {
+            font-size: 36px;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .start-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+        .start-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="wheel-container">
+        <div class="wheel" id="wheel"></div>
+        <div class="center-pointer">
+            <div class="pointer"></div>
+        </div>
+        <div class="center-circle">?</div>
+    </div>
+    <div class="result-display" id="result">?</div>
+    <button class="start-btn" id="startBtn">开始</button>
+
+    <script>
+        const wheel = document.getElementById('wheel');
+        const result = document.getElementById('result');
+        const startBtn = document.getElementById('startBtn');
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        // 修改创建数字的函数
+        function createNumbers() {
+            const radius = 220; // 固定半径，所有数字使用相同的半径
+            const totalNumbers = 49;
+            const angleStep = (360 / totalNumbers) * (Math.PI / 180);
+
+            for (let i = 1; i <= totalNumbers; i++) {
+                const number = document.createElement('div');
+                number.className = 'number';
+                number.textContent = i;
+                
+                // 所有数字使用相同的半径
+                const angle = angleStep * (i - 1);
+                const x = radius * Math.cos(angle);
+                const y = radius * Math.sin(angle);
+                
+                const rotationAngle = (angle * (180 / Math.PI)) + 90;
+                
+                number.style.transform = `
+                    translate(${x}px, ${y}px) 
+                    rotate(${rotationAngle}deg)
+                `;
+                
+                wheel.appendChild(number);
+            }
+        }
+
+        function getRandomNumber() {
+            return Math.floor(Math.random() * 49) + 1;
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            
+            isSpinning = true;
+            startBtn.disabled = true;
+            result.textContent = '?';
+            document.querySelector('.center-circle').textContent = '?';
+            
+            const selectedNumber = getRandomNumber();
+            const numberOfSpins = 5;
+            const targetAngle = 360 - ((selectedNumber - 1) * (360 / 49));
+            const totalRotation = (numberOfSpins * 360) + targetAngle;
+            
+            currentRotation += totalRotation;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                startBtn.disabled = false;
+                result.textContent = selectedNumber;
+                document.querySelector('.center-circle').textContent = selectedNumber;
+            }, 3000);
+        }
+
+        createNumbers();
+        startBtn.addEventListener('click', spin);
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                spin();
+            }
+        });
+    </script>
+</body>
+</html>

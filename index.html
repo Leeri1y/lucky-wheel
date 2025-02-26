@@ -20,8 +20,8 @@
         }
         .wheel-container {
             position: relative;
-            width: 500px;
-            height: 500px;
+            width: 450px;
+            height: 450px;
             margin-bottom: 20px;
         }
         .wheel {
@@ -45,10 +45,11 @@
         .pointer {
             width: 4px;
             height: 100%;
-            background: #ff0000;
+            background: #0000ff;
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
+            will-change: transform;
         }
         .center-circle {
             position: absolute;
@@ -115,7 +116,6 @@
         <div class="center-pointer">
             <div class="pointer"></div>
         </div>
-        <div class="center-circle">?</div>
     </div>
     <div class="result-display" id="result">?</div>
     <button class="start-btn" id="startBtn">开始</button>
@@ -124,10 +124,11 @@
         const wheel = document.getElementById('wheel');
         const result = document.getElementById('result');
         const startBtn = document.getElementById('startBtn');
+        const pointer = document.querySelector('.pointer'); // 获取指针元素
         let isSpinning = false;
         let currentRotation = 0;
 
-        // 修改创建数字的函数
+        // 创建数字的函数
         function createNumbers() {
             const radius = 220; // 固定半径，所有数字使用相同的半径
             const totalNumbers = 49;
@@ -146,7 +147,7 @@
                 const rotationAngle = (angle * (180 / Math.PI)) + 90;
                 
                 number.style.transform = `
-                    translate(${x}px, ${y}px) 
+                    translate(${x}px,${y}px) 
                     rotate(${rotationAngle}deg)
                 `;
                 
@@ -164,21 +165,20 @@
             isSpinning = true;
             startBtn.disabled = true;
             result.textContent = '?';
-            document.querySelector('.center-circle').textContent = '?';
             
             const selectedNumber = getRandomNumber();
-            const numberOfSpins = 5;
-            const targetAngle = 360 - ((selectedNumber - 1) * (360 / 49));
-            const totalRotation = (numberOfSpins * 360) + targetAngle;
+            const targetAngle = (selectedNumber - 1) * (360 / 49) + 720; // 计算目标角度
             
-            currentRotation += totalRotation;
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            // 更新指针的旋转角度
+            currentRotation += targetAngle;
+            pointer.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+            pointer.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(() => {
+                pointer.style.transition = ''; // 清除过渡效果
                 isSpinning = false;
                 startBtn.disabled = false;
                 result.textContent = selectedNumber;
-                document.querySelector('.center-circle').textContent = selectedNumber;
             }, 3000);
         }
 

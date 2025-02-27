@@ -20,8 +20,8 @@
         }
         .wheel-container {
             position: relative;
-            width: 450px;
-            height: 450px;
+            width: 380px;
+            height: 380px;
             margin-bottom: 20px;
         }
         .wheel {
@@ -43,8 +43,8 @@
             z-index: 2;
         }
         .pointer {
-            width: 4px;
-            height: 100%;
+            width: 3px;
+            height: 65%;
             background: #0000ff;
             position: absolute;
             left: 50%;
@@ -74,18 +74,18 @@
             left: 50%;
             top: 50%;
             transform-origin: 0 0;
-            font-size: 18px;
+            font-size: 12px;
             color: #333;
             font-weight: bold;
             background: rgba(255, 255, 255, 0.9);
             padding: 3px 8px;
             border-radius: 10px;
             text-align: center;
-            min-width: 16px;
+            min-width: 14px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .result-display {
-            font-size: 36px;
+            font-size: 24px;
             margin: 20px 0;
             padding: 10px 20px;
             background: #fff;
@@ -93,8 +93,8 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .start-btn {
-            padding: 15px 30px;
-            font-size: 20px;
+            padding: 12px 25px;
+            font-size: 18px;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -131,7 +131,7 @@
 
         // 创建数字的函数
         function createNumbers() {
-            const radius = 220; // 固定半径，所有数字使用相同的半径
+            const radius = 185; // 固定半径，所有数字使用相同的半径
             const totalNumbers = 49;
             const angleStep = (360 / totalNumbers) * (Math.PI / 180);
 
@@ -186,7 +186,7 @@
         createNumbers();
         // 设置pointer的初始旋转状态
         pointer.style.transform = 'rotate(0deg)';
-        
+
         startBtn.addEventListener('click', spin);
         document.addEventListener('keydown', (event) => {
             if (event.code === 'Space') {

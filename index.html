@@ -164,11 +164,14 @@
         let spinCount = 0; // 添加摇奖次数计数器
         const maxSpinCount = 7; // 最大摇奖次数
 
-        // 在页面加载时清除本地存储中的历史记录数据
-        window.addEventListener('load', () => {
+        // 检查是否是第一次访问页面
+        if (!sessionStorage.getItem('visited')) {
+            // 如果是第一次访问，清除历史记录
             localStorage.removeItem('history');
-        });
-        
+            // 设置标志，表示已经访问过页面
+            sessionStorage.setItem('visited', 'true');
+        }
+
         // 读取历史记录
         let history = JSON.parse(localStorage.getItem('history')) || [];
 

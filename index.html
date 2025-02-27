@@ -50,6 +50,7 @@
             left: 50%;
             transform: translateX(-50%);
             will-change: transform;
+            transform: rotate(0deg); /* 设置初始旋转状态 */
         }
         .center-circle {
             position: absolute;
@@ -183,6 +184,9 @@
         }
 
         createNumbers();
+        // 设置pointer的初始旋转状态
+        pointer.style.transform = 'rotate(0deg)';
+        
         startBtn.addEventListener('click', spin);
         document.addEventListener('keydown', (event) => {
             if (event.code === 'Space') {

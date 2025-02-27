@@ -34,12 +34,12 @@
             transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
         }
         .center-pointer {
-            position: absolute;
+            position:  absolute;
             left: 50%;
-            top: 50%;
+            top: 55%;
             transform: translate(-50%, -50%);
             width: 20px;
-            height: 120px;
+            height: 100px;
             z-index: 2;
         }
         .pointer {
@@ -109,6 +109,32 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
+        .history-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .history-title {
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .history-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 10px 0;
+            display: none;
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+        .history-list li {
+            display: inline-block;
+            font-size: 14px;
+            margin: 0 5px;
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -120,6 +146,11 @@
     </div>
     <div class="result-display" id="result">?</div>
     <button class="start-btn" id="startBtn">开始</button>
+    <div class="history-container">
+        <div class="history-title" id="historyTitle">点击显示中奖记录</div>
+        <ul class="history-list" id="historyList"></ul>
+    </div>
+    <div id="message" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
 
     <script>
         const wheel = document.getElementById('wheel');
@@ -128,6 +159,13 @@
         const pointer = document.querySelector('.pointer'); // 获取指针元素
         let isSpinning = false;
         let currentRotation = 0;
+        const historyTitle = document.getElementById('historyTitle');
+        const historyList = document.getElementById('historyList');
+        let spinCount = 0; // 添加摇奖次数计数器
+        const maxSpinCount = 7; // 最大摇奖次数
+
+        // 读取历史记录
+        let history = JSON.parse(localStorage.getItem('history')) || [];
 
         // 创建数字的函数
         function createNumbers() {
@@ -157,31 +195,67 @@
         }
 
         function getRandomNumber() {
-            return Math.floor(Math.random() * 49) + 1;
+            let randomNumber;
+            do {
+                randomNumber = Math.floor(Math.random() * 49) + 1;
+            } while (history.includes(randomNumber)); // 检查生成的数字是否已经存在于历史记录中
+            return randomNumber;
         }
 
         function spin() {
-            if (isSpinning) return;
+            if (isSpinning || spinCount >= maxSpinCount) return;
             
             isSpinning = true;
             startBtn.disabled = true;
             result.textContent = '?';
             
-            const selectedNumber = getRandomNumber();
-            const targetAngle = (selectedNumber - 1) * (360 / 49) + 720; // 计算目标角度
+            const selectedNumber = getRandomNumber(); // 获取不重复的随机数
+            const targetAngle = (selectedNumber - 1) * (360 / 49) + 720;
             
-            // 更新指针的旋转角度
             currentRotation += targetAngle;
             pointer.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
             pointer.style.transform = `rotate(${currentRotation}deg)`;
 
             setTimeout(() => {
-                pointer.style.transition = ''; // 清除过渡效果
+                pointer.style.transition = '';
                 isSpinning = false;
                 startBtn.disabled = false;
                 result.textContent = selectedNumber;
+                history.unshift(selectedNumber);
+                history = history.slice(0, 7);
+                localStorage.setItem('history', JSON.stringify(history));
+                updateHistory();
+                spinCount++;
+                if (spinCount === maxSpinCount) {
+                    startBtn.disabled = true;
+                    showMessage("祝你今天特中！");
+                }
             }, 3000);
         }
+
+        // 更新历史记录显示
+        function updateHistory() {
+            historyList.innerHTML = '';
+            history.slice(0, 7).forEach(number => {
+                const listItem = document.createElement('li');
+                listItem.textContent = number;
+                historyList.appendChild(listItem);
+            });
+        }
+
+        // 初始化历史记录显示
+        updateHistory();
+
+        // 历史记录显示/隐藏切换
+        historyTitle.addEventListener('click', () => {
+            if (historyList.style.display === 'none') {
+                historyList.style.display = 'block';
+                historyTitle.textContent = '隐藏中奖记录';
+            } else {
+                historyList.style.display = 'none';
+                historyTitle.textContent = '点击显示中奖记录';
+            }
+        });
 
         createNumbers();
         // 设置pointer的初始旋转状态
@@ -193,6 +267,25 @@
                 spin();
             }
         });
+
+        function resetGame() {
+            history = []; // 清空历史记录数组
+            localStorage.removeItem('history'); // 从本地存储中删除历史记录
+            updateHistory(); // 更新历史记录显示
+            spinCount = 0; // 重置摇奖次数
+            startBtn.disabled = false; // 启用开始按钮
+            showMessage(""); // 清空消息
+            currentRotation = 0; // 重置指针旋转角度
+            pointer.style.transform = 'rotate(0deg)'; // 重置指针旋转状态
+            result.textContent = '?'; // 重置结果显示
+        }
+
+        restartButton.addEventListener('click', resetGame);
+
+        function showMessage(text) {
+            const messageElement = document.getElementById("message");
+            messageElement.textContent = text;
+        }
     </script>
 </body>
 </html>

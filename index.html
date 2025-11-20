@@ -1,299 +1,476 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="description" content="幸运转盘 - 随机抽取1-49的幸运数字">
-    <title>发财幸运大转盘</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        .wheel-container {
-            position: relative;
-            width: 380px;
-            height: 380px;
-            margin-bottom: 20px;
-        }
-        .wheel {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 8px solid #333;
-            position: relative;
-            background: #fff;
-            transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-        }
-        .center-pointer {
-            position:  absolute;
-            left: 50%;
-            top: 55%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 100px;
-            z-index: 2;
-        }
-        .pointer {
-            width: 3px;
-            height: 65%;
-            background: #0000ff;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            will-change: transform;
-            transform: rotate(0deg); /* 设置初始旋转状态 */
-        }
-        .center-circle {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            background: #fff;
-            border: 4px solid #333;
-            border-radius: 50%;
-            z-index: 3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .number {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform-origin: 0 0;
-            font-size: 12px;
-            color: #333;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 3px 8px;
-            border-radius: 10px;
-            text-align: center;
-            min-width: 14px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .result-display {
-            font-size: 24px;
-            margin: 20px 0;
-            padding: 10px 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .start-btn {
-            padding: 12px 25px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .start-btn:hover {
-            background-color: #45a049;
-        }
-        .start-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .history-container {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .history-title {
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-        }
-        .history-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 10px 0;
-            display: none;
-            white-space: nowrap;
-            overflow-x: auto;
-        }
-        .history-list li {
-            display: inline-block;
-            font-size: 14px;
-            margin: 0 5px;
-            padding: 5px 10px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>发财幸运大转盘</title>
+  <meta name="description" content="现代化移动优先幸运转盘 — 随机抽取 1-49 的幸运数字" />
+  <style>
+    :root{
+      --bg:#071022;
+      --card: rgba(255,255,255,0.02);
+      --accent:#ffb86b;
+      --muted:#9fb0c8;
+      --text:#eef6ff;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(800px 300px at 10% 10%, rgba(255,184,107,0.04), transparent), var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .app {
+      width:100%;
+      max-width:980px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:20px;
+      align-items:start;
+    }
+    @media (max-width:820px){
+      .app{grid-template-columns:1fr; padding-bottom:18px}
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:14px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .left{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    .wheel-wrap{
+      width:100%;
+      max-width:520px;
+      aspect-ratio:1/1;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      touch-action:manipulation;
+    }
+
+    canvas#wheelCanvas{
+      width:100%;
+      height:100%;
+      border-radius:50%;
+      background: conic-gradient( rgba(255,255,255,0.02), transparent 180deg );
+      box-shadow: 0 12px 36px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* top pointer */
+    .pointer {
+      position:absolute;
+      top:6px;
+      left:50%;
+      transform:translateX(-50%);
+      width:0;height:0;
+      border-left:14px solid transparent;
+      border-right:14px solid transparent;
+      border-bottom:32px solid var(--accent);
+      filter:drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+      z-index:40;
+    }
+
+    /* center display: ensure clarity on small screens */
+    .center {
+      position:absolute;
+      width:132px;
+      height:132px;
+      border-radius:50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      z-index:45;
+      box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      border:1px solid rgba(255,255,255,0.03);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+
+    .result {
+      font-size:34px;
+      font-weight:800;
+      color:var(--accent);
+      line-height:1;
+      letter-spacing:1px;
+    }
+    .sub {
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .controls {
+      display:flex;
+      gap:12px;
+      margin-top:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    button.btn {
+      padding:12px 18px;
+      border-radius:12px;
+      border: none;
+      cursor:pointer;
+      font-weight:700;
+      color:#071022;
+      background: linear-gradient(180deg,var(--accent), #ff9d3a);
+      box-shadow: 0 8px 24px rgba(255,153,66,0.12);
+      transition: transform 0.12s ease, filter 0.12s ease;
+      min-width:96px;
+      font-size:16px;
+    }
+    button.btn.secondary{
+      background:transparent;
+      color:var(--accent);
+      border: 1px solid rgba(255,184,107,0.12);
+      box-shadow:none;
+    }
+    button.btn:active{transform:translateY(1px)}
+    button.btn[disabled]{opacity:0.45;cursor:not-allowed}
+
+    .right{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .title{display:flex;justify-content:space-between;align-items:center}
+    .title h2{margin:0;font-size:16px}
+    .small{font-size:13px;color:var(--muted)}
+    .history{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:10px;
+      border-radius:10px;
+      background: rgba(255,255,255,0.02);
+      min-height:66px;
+      align-items:center;
+    }
+    .history .item{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:8px 12px;
+      border-radius:999px;
+      color:#fff;
+      font-weight:800;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.5);
+      border:1px solid rgba(255,255,255,0.02);
+      font-size:15px;
+    }
+    .meta{display:flex;gap:10px;align-items:center}
+    .message{min-height:36px;color:#ffdca8;font-weight:700}
+    .footer-note{font-size:12px;color:var(--muted);margin-top:8px}
+  </style>
 </head>
 <body>
-    <div class="wheel-container">
-        <div class="wheel" id="wheel"></div>
-        <div class="center-pointer">
-            <div class="pointer"></div>
+  <main class="app">
+    <section class="panel left">
+      <div class="wheel-wrap" id="wheelWrap" aria-hidden="false">
+        <canvas id="wheelCanvas" width="800" height="800" role="img" aria-label="幸运转盘"></canvas>
+        <div class="pointer" aria-hidden="true"></div>
+        <div class="center" role="status" aria-live="polite">
+          <div class="result" id="result">?</div>
+          <div class="sub">中奖号码</div>
         </div>
-    </div>
-    <div class="result-display" id="result">?</div>
-    <button class="start-btn" id="startBtn">开始</button>
-    <div class="history-container">
-        <div class="history-title" id="historyTitle">点击显示中奖记录</div>
-        <ul class="history-list" id="historyList"></ul>
-    </div>
-    <div id="message" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+      </div>
 
-    <script>
-        const wheel = document.getElementById('wheel');
-        const result = document.getElementById('result');
-        const startBtn = document.getElementById('startBtn');
-        const pointer = document.querySelector('.pointer'); // 获取指针元素
-        let isSpinning = false;
-        let currentRotation = 0;
-        const historyTitle = document.getElementById('historyTitle');
-        const historyList = document.getElementById('historyList');
-        let spinCount = 0; // 添加摇奖次数计数器
-        const maxSpinCount = 7; // 最大摇奖次数
+      <div style="width:100%;display:flex;justify-content:center;">
+        <div class="controls">
+          <button class="btn" id="spinBtn" aria-label="开始抽奖">开始</button>
+          <button class="btn secondary" id="resetBtn" aria-label="重置历史">重置</button>
+          <div class="small" style="align-self:center">剩余：<strong id="remaining">7</strong>/7</div>
+        </div>
+      </div>
 
-        // 检查是否是第一次访问页面
-        if (!sessionStorage.getItem('visited')) {
-            // 如果是第一次访问，清除历史记录
-            localStorage.removeItem('history');
-            // 设置标志，表示已经访问过页面
-            sessionStorage.setItem('visited', 'true');
+      <div class="footer-note">支持空格键触发 · 触屏优先 · 请横置或放大查看更清晰的转盘</div>
+    </section>
+
+    <aside class="panel right">
+      <div class="title">
+        <h2>抽奖记录</h2>
+        <div class="small">最近 7 次</div>
+      </div>
+
+      <div class="history" id="history">暂无记录</div>
+
+      <div>
+        <div class="small">提示</div>
+        <div class="message" id="message"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Mobile-friendly improvements and precise alignment of result:
+    // - Use high-DPI canvas and responsive sizing.
+    // - Calculate exact final rotation so the chosen sector's center aligns with the top pointer.
+    // - Ensure center display shows the final number clearly after stop.
+    // - Large touch-friendly controls and accessible labels.
+
+    const TOTAL = 49;
+    const MAX_SPINS = 7;
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultEl = document.getElementById('result');
+    const messageEl = document.getElementById('message');
+    const historyEl = document.getElementById('history');
+    const remainingEl = document.getElementById('remaining');
+    const wheelWrap = document.getElementById('wheelWrap');
+
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+    // responsive high-dpi canvas sizing
+    function sizeCanvas(){
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(200, rect.width);
+      const h = Math.max(200, rect.height);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    sizeCanvas();
+    window.addEventListener('resize', () => {
+      sizeCanvas();
+      drawWheel(currentRotation);
+    });
+
+    // state
+    let history = JSON.parse(localStorage.getItem('lucky_history')) || [];
+    history = Array.isArray(history) ? history : [];
+    let spinCount = parseInt(localStorage.getItem('lucky_spinCount')) || 0;
+    let isSpinning = false;
+    let currentRotation = 0; // degrees, applied clockwise
+    const sectorAngle = 360 / TOTAL;
+
+    const colors = [
+      '#ff8a65','#ffd54f','#81c784','#4fc3f7','#b39ddb','#ffab91','#ffe082','#aed581',
+      '#4dd0e1','#ce93d8','#ffcc80','#fff59d'
+    ];
+
+    function drawWheel(rotation = 0) {
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+      const cx = w/2, cy = h/2;
+      const radius = Math.min(w, h)/2 - 6;
+      ctx.clearRect(0,0,w,h);
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rotation * Math.PI / 180);
+
+      for (let i=0;i<TOTAL;i++){
+        const start = (i * sectorAngle - sectorAngle/2) * Math.PI/180;
+        const end = ((i+1) * sectorAngle - sectorAngle/2) * Math.PI/180;
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(0,0);
+        ctx.arc(0,0,radius,start,end,false);
+        ctx.closePath();
+        ctx.fill();
+
+        // number text: mid-angle for sector i is i * sectorAngle (deg)
+        const mid = (i * sectorAngle) * Math.PI/180;
+        const textRadius = radius * 0.72;
+        ctx.save();
+        const tx = Math.cos(mid) * textRadius;
+        const ty = Math.sin(mid) * textRadius;
+        ctx.translate(tx, ty);
+        ctx.rotate(mid + Math.PI/2); // make text upright relative to viewer
+        ctx.fillStyle = '#071022';
+        ctx.font = `${Math.max(12, Math.floor(radius * 0.095))}px system-ui, Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(i+1), 0, 0);
+        ctx.restore();
+      }
+
+      // outer ring
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(3, radius*0.04);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.arc(0,0, radius + ctx.lineWidth/2 - 1, 0, Math.PI*2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    drawWheel(currentRotation);
+
+    function getRandomNumberNotInHistory(){
+      const avail = [];
+      for (let i=1;i<=TOTAL;i++) if (!history.includes(i)) avail.push(i);
+      if (avail.length === 0) return null;
+      return avail[Math.floor(Math.random() * avail.length)];
+    }
+
+    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+    // compute desired final rotation (deg) so that chosen number's sector center aligns with top pointer
+    function desiredRotationForNumber(num){
+      // mid-angle (deg) for sector index i = num-1 is: mid = i * sectorAngle
+      // we need: mid + rotation ≡ -90deg  (top)
+      // so rotation ≡ -90 - mid  => normalize to [0,360)
+      const mid = (num - 1) * sectorAngle;
+      let desired = (-90 - mid) % 360;
+      if (desired < 0) desired += 360;
+      return desired;
+    }
+
+    // animate from currentRotation to absoluteTargetRotation (degrees)
+    function animateSpinTo(absoluteTarget, duration = 4400){
+      return new Promise(resolve => {
+        const startTime = performance.now();
+        const from = currentRotation;
+        const delta = absoluteTarget - from;
+        function step(now){
+          const t = Math.min(1, (now - startTime) / duration);
+          const eased = easeOutCubic(t);
+          const value = from + delta * eased;
+          drawWheel(value);
+          if (t < 1) requestAnimationFrame(step);
+          else {
+            currentRotation = ((absoluteTarget % 360) + 360) % 360;
+            drawWheel(currentRotation);
+            resolve();
+          }
         }
+        requestAnimationFrame(step);
+      });
+    }
 
-        // 读取历史记录
-        let history = JSON.parse(localStorage.getItem('history')) || [];
-
-        // 创建数字的函数
-        function createNumbers() {
-            const radius = 185; // 固定半径，所有数字使用相同的半径
-            const totalNumbers = 49;
-            const angleStep = (360 / totalNumbers) * (Math.PI / 180);
-
-            for (let i = 1; i <= totalNumbers; i++) {
-                const number = document.createElement('div');
-                number.className = 'number';
-                number.textContent = i;
-                
-                // 所有数字使用相同的半径
-                const angle = angleStep * (i - 1);
-                const x = radius * Math.cos(angle);
-                const y = radius * Math.sin(angle);
-                
-                const rotationAngle = (angle * (180 / Math.PI)) + 90;
-                
-                number.style.transform = `
-                    translate(${x}px,${y}px) 
-                    rotate(${rotationAngle}deg)
-                `;
-                
-                wheel.appendChild(number);
-            }
-        }
-
-        function getRandomNumber() {
-            let randomNumber;
-            do {
-                randomNumber = Math.floor(Math.random() * 49) + 1;
-            } while (history.includes(randomNumber)); // 检查生成的数字是否已经存在于历史记录中
-            return randomNumber;
-        }
-
-        function spin() {
-            if (isSpinning || spinCount >= maxSpinCount) return;
-            
-            isSpinning = true;
-            startBtn.disabled = true;
-            result.textContent = '?';
-            
-            const selectedNumber = getRandomNumber(); // 获取不重复的随机数
-            const targetAngle = (selectedNumber - 1) * (360 / 49) + 720;
-            
-            currentRotation += targetAngle;
-            pointer.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-            pointer.style.transform = `rotate(${currentRotation}deg)`;
-
-            setTimeout(() => {
-                pointer.style.transition = '';
-                isSpinning = false;
-                startBtn.disabled = false;
-                result.textContent = selectedNumber;
-                history.unshift(selectedNumber);
-                history = history.slice(0, 7);
-                localStorage.setItem('history', JSON.stringify(history));
-                updateHistory();
-                spinCount++;
-                if (spinCount === maxSpinCount) {
-                    startBtn.disabled = true;
-                    showMessage("祝你今天特中！");
-                }
-            }, 3000);
-        }
-
-        // 更新历史记录显示
-        function updateHistory() {
-            historyList.innerHTML = '';
-            history.slice(0, 7).forEach(number => {
-                const listItem = document.createElement('li');
-                listItem.textContent = number;
-                historyList.appendChild(listItem);
-            });
-        }
-
-        // 初始化历史记录显示
-        updateHistory();
-
-        // 历史记录显示/隐藏切换
-        historyTitle.addEventListener('click', () => {
-            if (historyList.style.display === 'none') {
-                historyList.style.display = 'block';
-                historyTitle.textContent = '隐藏中奖记录';
-            } else {
-                historyList.style.display = 'none';
-                historyTitle.textContent = '点击显示中奖记录';
-            }
+    function updateUi(){
+      // history
+      historyEl.innerHTML = '';
+      if (history.length === 0){
+        const d = document.createElement('div');
+        d.className = 'small';
+        d.style.color = 'var(--muted)';
+        d.textContent = '暂无记录';
+        historyEl.appendChild(d);
+      } else {
+        history.slice(0,7).forEach(n=>{
+          const el = document.createElement('div');
+          el.className = 'item';
+          el.textContent = n;
+          historyEl.appendChild(el);
         });
+      }
+      remainingEl.textContent = Math.max(0, MAX_SPINS - spinCount);
+      if (history.length > 0) resultEl.textContent = history[0];
+      else resultEl.textContent = '?';
+      localStorage.setItem('lucky_history', JSON.stringify(history));
+      localStorage.setItem('lucky_spinCount', String(spinCount));
+    }
 
-        createNumbers();
-        // 设置pointer的初始旋转状态
-        pointer.style.transform = 'rotate(0deg)';
+    function showMessage(txt){
+      messageEl.textContent = txt || '';
+    }
 
-        startBtn.addEventListener('click', spin);
-        document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
-                spin();
-            }
-        });
+    async function spin(){
+      if (isSpinning) return;
+      if (spinCount >= MAX_SPINS){
+        showMessage('次数已用尽，请重置后再试。');
+        return;
+      }
+      const pick = getRandomNumberNotInHistory();
+      if (pick === null){
+        showMessage('所有号码已抽完，已自动清空记录。');
+        history = []; spinCount = 0; updateUi();
+        return;
+      }
 
-        function resetGame() {
-            history = []; // 清空历史记录数组
-            localStorage.removeItem('history'); // 从本地存储中删除历史记录
-            updateHistory(); // 更新历史记录显示
-            spinCount = 0; // 重置摇奖次数
-            startBtn.disabled = false; // 启用开始按钮
-            showMessage(""); // 清空消息
-            currentRotation = 0; // 重置指针旋转角度
-            pointer.style.transform = 'rotate(0deg)'; // 重置指针旋转状态
-            result.textContent = '?'; // 重置结果显示
-        }
+      isSpinning = true;
+      spinBtn.disabled = true;
+      resetBtn.disabled = true;
+      showMessage('');
 
-        restartButton.addEventListener('click', resetGame);
+      // compute target rotation:
+      const desiredMod360 = desiredRotationForNumber(pick); // 0..360
+      // ensure multiple full turns for nice animation
+      const extraSpins = 6 + Math.floor(Math.random() * 4); // 6-9 full spins
+      // compute small delta so that final absolute target is > currentRotation and ends at desiredMod360
+      // absoluteTarget = currentRotation + extraSpins*360 + ((desiredMod360 - (currentRotation % 360) + 360) % 360)
+      const currentMod = ((currentRotation % 360) + 360) % 360;
+      const deltaToDesired = (desiredMod360 - currentMod + 360) % 360;
+      const absoluteTarget = currentRotation + extraSpins * 360 + deltaToDesired;
 
-        function showMessage(text) {
-            const messageElement = document.getElementById("message");
-            messageElement.textContent = text;
-        }
-    </script>
+      // animate
+      const duration = 3800 + Math.floor(Math.random() * 1600);
+      // during spin show placeholder
+      resultEl.textContent = '...';
+      await animateSpinTo(absoluteTarget, duration);
+
+      // finalize: ensure center shows final number clearly
+      history.unshift(pick);
+      history = history.slice(0, 7);
+      spinCount++;
+      updateUi();
+      showMessage(`恭喜！号码 ${pick} 被选中。`);
+
+      isSpinning = false;
+      spinBtn.disabled = spinCount >= MAX_SPINS;
+      resetBtn.disabled = false;
+
+      if (spinCount >= MAX_SPINS){
+        showMessage('今日机会用完，祝你好运！');
+      }
+    }
+
+    function resetGame(){
+      if (isSpinning) return;
+      history = [];
+      spinCount = 0;
+      currentRotation = 0;
+      drawWheel(currentRotation);
+      updateUi();
+      showMessage('已重置：历史与次数已清空。');
+    }
+
+    // events
+    spinBtn.addEventListener('click', spin);
+    resetBtn.addEventListener('click', () => {
+      if (confirm('确定要重置历史并恢复次数吗？')) resetGame();
+    });
+
+    // touch: tap on canvas to spin (mobile friendly)
+    canvas.addEventListener('click', () => { spin(); });
+    // keyboard
+    document.addEventListener('keydown', (e) => { if (e.code === 'Space'){ e.preventDefault(); spin(); } });
+
+    // initialize UI and draw
+    updateUi();
+    // ensure proper sizing on load after layout
+    setTimeout(() => { sizeCanvas(); drawWheel(currentRotation); }, 50);
+
+  </script>
 </body>
 </html>

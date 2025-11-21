@@ -233,12 +233,21 @@
     </aside>
   </main>
 
+  <!-- Audio elements: place your audio files at /sounds/spin.mp3 and /sounds/stop.mp3
+       - spin.mp3 should be a soft continuous loop (low volume) to play while the wheel spins.
+       - stop.mp3 should be a short "impact" or "ding" sound played on stop.
+       If you don't have files, the script will fallback to short generated beeps for ticks/stop using WebAudio.
+  -->
+  <audio id="spinAudio" src="/sounds/spin.mp3" preload="auto" loop></audio>
+  <audio id="stopAudio" src="/sounds/stop.mp3" preload="auto"></audio>
+
   <script>
-    // Mobile-friendly improvements and precise alignment of result:
-    // - Use high-DPI canvas and responsive sizing.
-    // - Calculate exact final rotation so the chosen sector's center aligns with the top pointer.
-    // - Ensure center display shows the final number clearly after stop.
-    // - Large touch-friendly controls and accessible labels.
+    // Mobile-friendly improvements and precise alignment of result.
+    // Added audio behavior:
+    // - spinAudio: looped audio element played while wheel animates (if available and allowed).
+    // - stopAudio: played once when animation finishes.
+    // - tick sounds: generated via WebAudio when the wheel crosses sectors (fallback / supplement).
+    // Note: Mobile browsers require a user gesture to allow AudioContext / play audio. The spin button/canvas click is a user gesture.
 
     const TOTAL = 49;
     const MAX_SPINS = 7;
@@ -250,11 +259,63 @@
     const messageEl = document.getElementById('message');
     const historyEl = document.getElementById('history');
     const remainingEl = document.getElementById('remaining');
-    const wheelWrap = document.getElementById('wheelWrap');
 
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const spinAudioElem = document.getElementById('spinAudio');
+    const stopAudioElem = document.getElementById('stopAudio');
+
+    let audioCtx = null;
+    function getAudioCtx(){
+      if (!audioCtx){
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+          audioCtx = null;
+        }
+      }
+      return audioCtx;
+    }
+
+    // Short generated tick/impact using WebAudio (fallback if stopAudio missing or for per-sector tick)
+    function playGeneratedClick({type='tick', volume=0.08} = {}){
+      const ac = getAudioCtx();
+      if (!ac) return;
+      // tiny envelope tone
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      const now = ac.currentTime;
+      if (type === 'tick'){
+        o.frequency.value = 1400;
+        g.gain.setValueAtTime(volume, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      } else { // 'stop'
+        o.frequency.value = 600;
+        g.gain.setValueAtTime(volume, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      }
+      o.type = 'sine';
+      o.connect(g);
+      g.connect(ac.destination);
+      o.start(now);
+      o.stop(now + (type === 'tick' ? 0.04 : 0.2));
+    }
+
+    // try to play an HTMLAudioElement and fall back to generated sound
+    async function tryPlayAudioElem(elem, fallbackType='stop'){
+      if (!elem) { playGeneratedClick({type: fallbackType}); return; }
+      try {
+        // resume audio context if suspended (mobile)
+        const ac = getAudioCtx();
+        if (ac && ac.state === 'suspended') await ac.resume();
+        elem.currentTime = 0;
+        await elem.play();
+      } catch (err) {
+        // playback failed (maybe browser blocked), fallback
+        playGeneratedClick({type: fallbackType});
+      }
+    }
 
     // responsive high-dpi canvas sizing
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
     function sizeCanvas(){
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(200, rect.width);
@@ -344,9 +405,6 @@
 
     // compute desired final rotation (deg) so that chosen number's sector center aligns with top pointer
     function desiredRotationForNumber(num){
-      // mid-angle (deg) for sector index i = num-1 is: mid = i * sectorAngle
-      // we need: mid + rotation ≡ -90deg  (top)
-      // so rotation ≡ -90 - mid  => normalize to [0,360)
       const mid = (num - 1) * sectorAngle;
       let desired = (-90 - mid) % 360;
       if (desired < 0) desired += 360;
@@ -354,16 +412,29 @@
     }
 
     // animate from currentRotation to absoluteTargetRotation (degrees)
+    // Added per-sector tick detection and audio playback control.
     function animateSpinTo(absoluteTarget, duration = 4400){
       return new Promise(resolve => {
         const startTime = performance.now();
         const from = currentRotation;
         const delta = absoluteTarget - from;
+        // track last sector crossed to play tick once per sector crossing
+        let lastSector = Math.floor(((from % 360) + 360) % 360 / sectorAngle);
         function step(now){
           const t = Math.min(1, (now - startTime) / duration);
           const eased = easeOutCubic(t);
           const value = from + delta * eased;
           drawWheel(value);
+
+          // PER-SECTOR TICK: detect sector index and play a short click when crossing into a new sector.
+          const mod = ((value % 360) + 360) % 360;
+          const sectorIndex = Math.floor(mod / sectorAngle);
+          if (sectorIndex !== lastSector){
+            lastSector = sectorIndex;
+            // small tick for each sector pass (low volume)
+            playGeneratedClick({type:'tick', volume:0.035});
+          }
+
           if (t < 1) requestAnimationFrame(step);
           else {
             currentRotation = ((absoluteTarget % 360) + 360) % 360;
@@ -416,6 +487,9 @@
         return;
       }
 
+      // Ensure audio context is created on user gesture to satisfy mobile autoplay rules
+      getAudioCtx();
+
       isSpinning = true;
       spinBtn.disabled = true;
       resetBtn.disabled = true;
@@ -423,19 +497,43 @@
 
       // compute target rotation:
       const desiredMod360 = desiredRotationForNumber(pick); // 0..360
-      // ensure multiple full turns for nice animation
       const extraSpins = 6 + Math.floor(Math.random() * 4); // 6-9 full spins
-      // compute small delta so that final absolute target is > currentRotation and ends at desiredMod360
-      // absoluteTarget = currentRotation + extraSpins*360 + ((desiredMod360 - (currentRotation % 360) + 360) % 360)
       const currentMod = ((currentRotation % 360) + 360) % 360;
       const deltaToDesired = (desiredMod360 - currentMod + 360) % 360;
       const absoluteTarget = currentRotation + extraSpins * 360 + deltaToDesired;
 
-      // animate
-      const duration = 3800 + Math.floor(Math.random() * 1600);
+      // Start spin audio (looped) if available; fall back is ticks only.
+      try {
+        // resume audio context if suspended (mobile browsers)
+        const ac = getAudioCtx();
+        if (ac && ac.state === 'suspended') await ac.resume();
+        if (spinAudioElem) {
+          spinAudioElem.currentTime = 0;
+          // try to play; may reject if browser blocked; catch below
+          const p = spinAudioElem.play();
+          if (p && p.catch) p.catch(() => {
+            // fallback: do nothing; ticks will play
+          });
+        }
+      } catch (err) {
+        // fallback: nothing to do; ticks will play
+      }
+
       // during spin show placeholder
       resultEl.textContent = '...';
+      const duration = 3800 + Math.floor(Math.random() * 1600);
       await animateSpinTo(absoluteTarget, duration);
+
+      // Stop spin audio and play stop audio/impact
+      try {
+        if (spinAudioElem && !spinAudioElem.paused) {
+          spinAudioElem.pause();
+          spinAudioElem.currentTime = 0;
+        }
+      } catch(e){ /* ignore */ }
+
+      // play stop sound (try element first, fallback to generated)
+      await tryPlayAudioElem(stopAudioElem, 'stop');
 
       // finalize: ensure center shows final number clearly
       history.unshift(pick);
@@ -478,7 +576,6 @@
     updateUi();
     // ensure proper sizing on load after layout
     setTimeout(() => { sizeCanvas(); drawWheel(currentRotation); }, 50);
-
   </script>
 </body>
 </html>

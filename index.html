@@ -1,638 +1,331 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grand Luxury Tree Final v2</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Times New Roman', serif; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* UI Overlay - Minimalist */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; 
-            align-items: center;
-            padding-top: 40px;
-            box-sizing: border-box;
-            /* Remove transition here as we don't hide the whole layer anymore */
-        }
-        
-        /* When hidden class is applied to specific elements */
-        .ui-hidden {
-            opacity: 0;
-            pointer-events: none !important;
-        }
+<h2 class="sr-only">2028年考研备考系统 — 备考计划总览、学习资料与每日打卡</h2>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+#app{padding:0.5rem 0 2rem;font-family:var(--font-sans);}
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1.5rem;gap:0;}
+.tab{padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;font-family:var(--font-sans);transition:color 0.15s;}
+.tab.active{color:var(--text-accent);border-bottom-color:var(--border-accent);}
+.tab:hover:not(.active){color:var(--text-secondary);}
+.phase-bar{display:flex;gap:3px;border-radius:8px;overflow:hidden;height:50px;margin-bottom:1.5rem;}
+.pseg{display:flex;flex-direction:column;justify-content:center;padding:0 10px;cursor:pointer;transition:opacity 0.15s;}
+.pseg:hover{filter:brightness(0.92);}
+.phase-card{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.phase-head{padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s;}
+.phase-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;color:white;}
+.phase-body{padding:14px 16px;border-top:0.5px solid var(--border);}
+.task-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);border-left:3px solid;margin-bottom:6px;background:var(--surface-1);}
+.badge{font-size:11px;padding:2px 8px;border-radius:var(--radius);font-weight:500;white-space:nowrap;}
+.info-box{padding:10px 12px;border-radius:var(--radius);border:0.5px solid var(--border);margin-top:10px;font-size:12px;color:var(--text-secondary);}
+.res-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.res-box{padding:12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);}
+.res-label{font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.res-item{font-size:12px;color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;align-items:flex-start;line-height:1.45;border-bottom:0.5px solid var(--border);}
+.res-item:last-child{border-bottom:none;}
+.res-item::before{content:"·";color:var(--text-muted);flex-shrink:0;}
+.prog-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:1.25rem;}
+.prog-fill{height:100%;border-radius:3px;transition:width 0.35s;}
+.tracker-section{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.sec-head{padding:10px 14px;display:flex;align-items:center;gap:8px;background:var(--surface-1);border-bottom:0.5px solid var(--border);}
+.check-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;user-select:none;transition:background 0.12s;}
+.check-row:last-child{border-bottom:none;}
+.check-row:hover{background:var(--surface-1);}
+.check-row.done{opacity:0.5;}
+.check-row.done .ck-label{text-decoration:line-through;}
+.check-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;flex-shrink:0;}
+.save-btn{padding:8px 20px;background:var(--fill-accent);color:var(--on-accent);border:none;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans);display:flex;align-items:center;gap:5px;}
+.save-btn:hover{opacity:0.9;}
+.date-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.phase-pill{padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:1rem;}
+.cur-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;color:white;margin-left:auto;}
+input[type=date]{font-size:13px;padding:6px 10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-2);color:var(--text-primary);font-family:var(--font-sans);}
+textarea{width:100%;border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;font-size:13px;resize:vertical;background:var(--surface-1);color:var(--text-primary);font-family:var(--font-sans);line-height:1.5;}
+</style>
 
-        /* Loading */
-        #loader {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.8s ease-out;
-        }
-        .loader-text {
-            color: #d4af37; font-size: 14px; letter-spacing: 4px; margin-top: 20px;
-            text-transform: uppercase; font-weight: 100;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 1px solid rgba(212, 175, 55, 0.2); 
-            border-top: 1px solid #d4af37; border-radius: 50%; 
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+<div id="app">
+  <div class="tabs">
+    <button class="tab active" id="tab-overview" onclick="sw('overview')"><i class="ti ti-layout-list" aria-hidden="true"></i> 备考概览</button>
+    <button class="tab" id="tab-resources" onclick="sw('resources')"><i class="ti ti-books" aria-hidden="true"></i> 学习资料</button>
+    <button class="tab" id="tab-tracker" onclick="sw('tracker')"><i class="ti ti-checkbox" aria-hidden="true"></i> 每日打卡</button>
+  </div>
+  <div id="content"></div>
+</div>
 
-        /* Typography - Centerpiece */
-        h1 { 
-            color: #fceea7; font-size: 56px; margin: 0; font-weight: 400; 
-            letter-spacing: 6px; 
-            text-shadow: 0 0 50px rgba(252, 238, 167, 0.6); 
-            background: linear-gradient(to bottom, #fff, #eebb66);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            font-family: 'Cinzel', 'Times New Roman', serif;
-            opacity: 0.9;
-            transition: opacity 0.5s ease; /* Ensure smooth transitions if needed */
-        }
+<script>
+const PC=['#2a78d6','#4a3aa7','#eda100','#e34948'];
+const PBG=['#e6f1fb','#eeedfe','#faeeda','#fcebeb'];
+const SC={'数学':'#2a78d6','英语':'#1baf7a','专业课':'#4a3aa7','政治':'#e34948'};
+const SBG={'数学':'#e6f1fb','英语':'#e1f5ee','专业课':'#eeedfe','政治':'#fcebeb'};
+const STX={'数学':'#185fa5','英语':'#0f6e56','专业课':'#3c3489','政治':'#a32d2d'};
 
-        /* Upload Button - Restored & Elegant */
-        .upload-wrapper {
-            margin-top: 20px;
-            pointer-events: auto;
-            text-align: center;
-            transition: opacity 0.5s ease; /* Add transition for smooth hiding */
-        }
-        .upload-btn {
-            background: rgba(20, 20, 20, 0.6); 
-            border: 1px solid rgba(212, 175, 55, 0.4); 
-            color: #d4af37; 
-            padding: 10px 25px; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            font-size: 10px;
-            transition: all 0.4s;
-            display: inline-block;
-            backdrop-filter: blur(5px);
-        }
-        .upload-btn:hover { 
-            background: #d4af37; 
-            color: #000; 
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-        }
-        .hint-text {
-            color: rgba(212, 175, 55, 0.5);
-            font-size: 9px;
-            margin-top: 8px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+const PH=[
+  {id:1,name:'地基期',short:'地基',period:'2026.07—2026.12',months:6,
+   goal:'数学打扎实基础，英语积累词汇',
+   tip:'工作日 1.5h（数学1h + 英语0.5h）· 周末单日 5h（数学2h + 英语1h + 了解专业课2h）',
+   tasks:[
+     {id:'p1m1',s:'数学',l:'听课/复习 1小时（武忠祥/汤家凤）'},
+     {id:'p1m2',s:'数学',l:'课后习题练习'},
+     {id:'p1e1',s:'英语',l:'背单词 50个（墨墨背单词）'},
+     {id:'p1e2',s:'英语',l:'阅读真题 2篇（张剑黄皮书）'},
+   ],
+   res:{
+     '数学':{b:['武忠祥《高等数学基础篇》','李永乐《线代辅导讲义》','汤家凤《考研数学复习全书·数学二》'],v:['武忠祥基础课（B站免费）','汤家凤基础班（网课平台）','李永乐线代基础班（B站）']},
+     '英语':{b:['张剑《黄皮书》英语二真题（先做2010年前）','朱伟《恋恋有词》词汇书'],v:['朱伟恋恋有词词汇课（B站）','唐迟阅读方法课（网课）']},
+     '专业课':{b:['查目标院校招生简章，下载专业课大纲','研招网/考研论坛获取近3年真题'],v:['暂不全面启动，熟悉大纲结构即可']},
+   }
+  },
+  {id:2,name:'强化期',short:'强化',period:'2027.01—2027.06',months:6,
+   goal:'数学专题强化，专业课系统启动',
+   tip:'工作日 2h（数学1.5h + 英语0.5h）· 周末 6h（数学2h + 英语1h + 专业课3h）',
+   tasks:[
+     {id:'p2m1',s:'数学',l:'专题强化 1.5小时（计时完成）'},
+     {id:'p2m2',s:'数学',l:'周模块练习题（每周至少1次）'},
+     {id:'p2e1',s:'英语',l:'背单词 30个'},
+     {id:'p2e2',s:'英语',l:'写作/翻译练习（2周1篇大作文）'},
+     {id:'p2z1',s:'专业课',l:'教材精读 1章节'},
+     {id:'p2z2',s:'专业课',l:'课后题 + 对应真题章节'},
+   ],
+   res:{
+     '数学':{b:['李永乐《数学复习全书》数学二版','张宇《题源探析》（强化题型）','历年真题2010—2022计时精刷'],v:['张宇强化班专题模块','李永乐线代强化（B站精品）']},
+     '英语':{b:['王江涛《高分写作》英语二','唐静《考研英语翻译专项》','张剑黄皮书2010年后真题'],v:['石雷鹏写作课','唐静翻译课（B站）']},
+     '专业课':{b:['郑君里《信号与系统》或奥本海姆版','童诗白《模拟电子技术基础》（模电）','阎石《数字电子技术基础》（数电）'],v:['西安交大信号与系统公开课（B站）','目标院校专业课讲解（B站搜索院校名）']},
+   }
+  },
+  {id:3,name:'冲刺期',short:'冲刺',period:'2027.07—2027.10',months:4,
+   goal:'真题精刷，政治启动，全科模拟',
+   tip:'工作日 3h · 周末全天 · 每周完成一套完整模拟卷 · 10月起各机构押题开始',
+   tasks:[
+     {id:'p3m1',s:'数学',l:'历年真题 1套（计时 2.5h）'},
+     {id:'p3m2',s:'数学',l:'错题复盘（3天后重做）'},
+     {id:'p3e1',s:'英语',l:'全题型模拟（计时 140分钟）'},
+     {id:'p3z1',s:'专业课',l:'目标校真题训练'},
+     {id:'p3z2',s:'专业课',l:'弱点章节补漏'},
+     {id:'p3p1',s:'政治',l:'肖秀荣精讲精练 45分钟'},
+   ],
+   res:{
+     '数学':{b:['历年真题全集（2010—2027）','李永乐6套卷','张宇8套卷（预压题）'],v:['错误对应章节重听强化课','各机构直播押题课（10月起）']},
+     '英语':{b:['张剑黄皮书近年真题全刷','王江涛大作文范文20篇（背诵）'],v:['石雷鹏大作文押题课','考前范文精讲（各机构）']},
+     '专业课':{b:['目标院校近5年真题（核心重点）','自整理错题本'],v:['目标院校考研经验贴（B站/知乎）','专业课答题规范参考']},
+     '政治':{b:['肖秀荣《精讲精练》','肖秀荣《1000题》'],v:['徐涛冲刺课（B站）','腿姐技巧班']},
+   }
+  },
+  {id:4,name:'收尾期',short:'收尾',period:'2027.11—2028.01',months:3,
+   goal:'保持手感，政治冲刺，考前状态调节',
+   tip:'全科保温 · 按正式考试时间作息 · 考前1周整卷模拟调节生物钟',
+   tasks:[
+     {id:'p4m1',s:'数学',l:'模拟卷保手感（李永乐6套/张宇4套）'},
+     {id:'p4e1',s:'英语',l:'大作文范文背诵（每天1篇）'},
+     {id:'p4z1',s:'专业课',l:'真题 + 模拟卷冲刺'},
+     {id:'p4p1',s:'政治',l:'肖四大题答题框架背诵'},
+     {id:'p4p2',s:'政治',l:'1000题二刷（选择题部分）'},
+   ],
+   res:{
+     '数学':{b:['李永乐6套卷','张宇4套卷','个人错题本收尾复查'],v:['考前押题直播（各机构12月）','高频考点速查视频']},
+     '英语':{b:['王江涛大作文10篇（必背）','小作文各类模板整理'],v:['石雷鹏押题作文','考前最后写作课']},
+     '专业课':{b:['目标院校真题再刷','自整理知识点速查卡片'],v:['目标院校老师相关讲解（B站）']},
+     '政治':{b:['肖四（必做，大题必背）','肖八选择题精刷','腿姐背诵手册'],v:['肖秀荣押题课','腿姐终极背诵班']},
+   }
+  },
+];
 
-        #file-input { display: none; }
+let tab='overview',ep=1,erp=1;
+let selDate=new Date().toISOString().slice(0,10);
+let ckd={},notes='',status='';
 
-        /* Webcam feedback */
-        #webcam-wrapper {
-            position: absolute; bottom: 40px; right: 40px;
-            width: 120px; height: 90px;
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden; opacity: 0; /* Hidden by default but functional */
-            pointer-events: none;
-        }
-    </style>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
-    </style>
+function phaseFor(d){
+  const dt=new Date(d);
+  if(dt<new Date('2027-01-01'))return 1;
+  if(dt<new Date('2027-07-01'))return 2;
+  if(dt<new Date('2027-11-01'))return 3;
+  return 4;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-                "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm"
-            }
-        }
-    </script>
-</head>
-<body>
+function sw(t){
+  tab=t;
+  ['overview','resources','tracker'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+  });
+  render();
+}
+function togP(id){ep=ep===id?0:id;render();}
+function togRP(id){erp=erp===id?0:id;render();}
+function togTask(id){ckd[id]=!ckd[id];status='';render();}
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <div class="loader-text">Loading Holiday Magic</div>
-    </div>
-
-    <div id="canvas-container"></div>
-
-    <div id="ui-layer">
-        <h1>Merry Christmas</h1>
-        
-        <div class="upload-wrapper">
-            <label class="upload-btn">
-                Add Memories
-                <input type="file" id="file-input" multiple accept="image/*">
-            </label>
-            <div class="hint-text">Press 'H' to Hide Controls</div>
+function renderOverview(){
+  const pid=phaseFor(selDate);
+  let h='<div class="phase-bar">';
+  PH.forEach((p,i)=>{
+    const ac=p.id===pid,pa=p.id<pid;
+    const bg=ac?PC[i]:pa?PC[i]+'99':'#d3d1c7';
+    const tc=(ac||pa)?'white':'#5f5e5a';
+    h+=`<div class="pseg" style="background:${bg};color:${tc};flex:${p.months}" onclick="togP(${p.id})">
+      <div style="font-size:12px;font-weight:500">${p.name}</div>
+      <div style="font-size:10px;opacity:0.8;margin-top:2px">${p.months}个月</div>
+    </div>`;
+  });
+  h+='</div>';
+  PH.forEach((p,i)=>{
+    const exp=ep===p.id,cur=p.id===pid,c=PC[i],bg=PBG[i];
+    h+=`<div class="phase-card" style="${cur?'border-color:'+c+'66':''}">
+      <div class="phase-head" onclick="togP(${p.id})" style="${exp?'background:'+bg:''}">
+        <div class="phase-num" style="background:${c}">${p.id}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary)">第${p.id}阶段：${p.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${p.period} · ${p.goal}</div>
         </div>
+        ${cur?`<span class="cur-badge" style="background:${c}">当前阶段</span>`:''}
+        <i class="ti ${exp?'ti-chevron-up':'ti-chevron-down'}" style="color:var(--text-muted);font-size:16px;${cur?'':'margin-left:8px'}" aria-hidden="true"></i>
+      </div>`;
+    if(exp){
+      h+=`<div class="phase-body">
+        <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">每日任务</div>`;
+      p.tasks.forEach(t=>{
+        h+=`<div class="task-row" style="border-left-color:${SC[t.s]}">
+          <span class="badge" style="background:${SBG[t.s]};color:${STX[t.s]}">${t.s}</span>
+          <span style="font-size:13px;color:var(--text-secondary)">${t.l}</span>
+        </div>`;
+      });
+      h+=`<div class="info-box"><i class="ti ti-clock" style="font-size:14px;vertical-align:-2px;margin-right:4px" aria-hidden="true"></i><span style="color:var(--text-primary);font-weight:500">时间建议：</span>${p.tip}</div>
+      </div>`;
+    }
+    h+='</div>';
+  });
+  return h;
+}
+
+function renderResources(){
+  let h='<div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem">点击各阶段展开查看推荐书籍与视频课程</div>';
+  PH.forEach((p,i)=>{
+    const exp=erp===p.id,c=PC[i],bg=PBG[i];
+    const subs=Object.keys(p.res);
+    h+=`<div class="phase-card">
+      <div class="phase-head" onclick="togRP(${p.id})" style="${exp?'background:'+bg:''}">
+        <div class="phase-num" style="background:${c};border-radius:6px;width:24px;height:24px;font-size:12px">${p.id}</div>
+        <div style="flex:1">
+          <span style="font-size:14px;font-weight:500;color:var(--text-primary)">${p.name}</span>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:8px">${p.period}</span>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${subs.map(s=>`<span class="badge" style="background:${SBG[s]};color:${STX[s]}">${s}</span>`).join('')}
+        </div>
+        <i class="ti ${exp?'ti-chevron-up':'ti-chevron-down'}" style="color:var(--text-muted);font-size:16px;margin-left:8px" aria-hidden="true"></i>
+      </div>`;
+    if(exp){
+      h+='<div class="phase-body">';
+      subs.forEach(sub=>{
+        const r=p.res[sub];
+        h+=`<div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+            <div style="width:9px;height:9px;border-radius:50%;background:${SC[sub]}"></div>
+            <span style="font-size:14px;font-weight:500;color:${SC[sub]}">${sub}</span>
+          </div>
+          <div class="res-grid">
+            <div class="res-box">
+              <div class="res-label"><i class="ti ti-book-2" style="font-size:14px" aria-hidden="true"></i>书籍 / 资料</div>
+              ${r.b.map(b=>`<div class="res-item">${esc(b)}</div>`).join('')}
+            </div>
+            <div class="res-box">
+              <div class="res-label"><i class="ti ti-player-play" style="font-size:14px" aria-hidden="true"></i>视频课程</div>
+              ${r.v.map(v=>`<div class="res-item">${esc(v)}</div>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  return h;
+}
+
+function renderTracker(){
+  const pid=phaseFor(selDate),p=PH[pid-1],c=PC[pid-1];
+  const total=p.tasks.length,done=p.tasks.filter(t=>ckd[t.id]).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  const subs=[...new Set(p.tasks.map(t=>t.s))];
+
+  let h=`<div class="date-row">
+    <label style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:5px">
+      <i class="ti ti-calendar" style="font-size:16px" aria-hidden="true"></i>打卡日期
+    </label>
+    <input type="date" id="dp" value="${selDate}">
+    <div style="margin-left:auto;font-size:13px;color:${c};font-weight:500">${done}/${total} 完成 · ${pct}%</div>
+  </div>
+  <div class="phase-pill" style="border-color:${c}44;background:${PBG[pid-1]}">
+    <div style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></div>
+    <span style="font-size:13px;color:var(--text-secondary)">第${pid}阶段 · <strong style="color:${c}">${p.name}</strong> · ${p.period}</span>
+  </div>
+  <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%;background:${c}"></div></div>`;
+
+  subs.forEach(sub=>{
+    const tasks=p.tasks.filter(t=>t.s===sub);
+    const sdone=tasks.filter(t=>ckd[t.id]).length;
+    h+=`<div class="tracker-section">
+      <div class="sec-head">
+        <div style="width:9px;height:9px;border-radius:50%;background:${SC[sub]}"></div>
+        <span style="font-size:13px;font-weight:500;color:${SC[sub]}">${sub}</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-muted)">${sdone}/${tasks.length}</span>
+      </div>`;
+    tasks.forEach(t=>{
+      const d=!!ckd[t.id];
+      h+=`<div class="check-row ${d?'done':''}" onclick="togTask('${t.id}')">
+        <input type="checkbox" ${d?'checked':''} style="accent-color:${SC[t.s]}" onclick="event.stopPropagation();togTask('${t.id}')" aria-label="${esc(t.l)}">
+        <span class="ck-label" style="font-size:13px;color:var(--text-primary);flex:1">${t.l}</span>
+        ${d?`<i class="ti ti-check" style="color:${SC[t.s]};font-size:16px;flex-shrink:0" aria-hidden="true"></i>`:''}
+      </div>`;
+    });
+    h+='</div>';
+  });
+
+  h+=`<div class="tracker-section" style="margin-top:12px">
+    <div class="sec-head">
+      <i class="ti ti-pencil" style="font-size:15px;color:var(--text-muted)" aria-hidden="true"></i>
+      <span style="font-size:13px;font-weight:500;color:var(--text-secondary)">今日备注</span>
     </div>
-
-    <!-- Webcam hidden structure -->
-    <div id="webcam-wrapper">
-        <video id="webcam" autoplay playsinline style="display:none;"></video>
-        <canvas id="webcam-preview"></canvas>
+    <div style="padding:10px 14px">
+      <textarea id="na" rows="3" placeholder="今天遇到的问题、需要复习的知识点…">${esc(notes)}</textarea>
     </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
+    <button class="save-btn" onclick="saveData()">
+      <i class="ti ti-device-floppy" style="font-size:15px" aria-hidden="true"></i>保存打卡
+    </button>
+    ${status?`<span style="font-size:13px;color:${status.includes('✓')?'#1baf7a':'#e34948'}">${esc(status)}</span>`:''}
+    ${done===total&&total>0?`<span style="font-size:13px;color:#eda100;font-weight:500"><i class="ti ti-star" aria-hidden="true"></i> 今日全部完成！</span>`:''}
+  </div>`;
+  return h;
+}
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'; 
-        import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
-
-        // --- CONFIGURATION ---
-        const CONFIG = {
-            colors: {
-                bg: 0x000000, 
-                champagneGold: 0xffd966, 
-                deepGreen: 0x03180a,     
-                accentRed: 0x990000,     
-            },
-            particles: {
-                count: 1500,     
-                dustCount: 2500, 
-                treeHeight: 24,  
-                treeRadius: 8    
-            },
-            camera: {
-                z: 50 
-            }
-        };
-
-        const STATE = {
-            mode: 'TREE', 
-            focusIndex: -1, 
-            focusTarget: null,
-            hand: { detected: false, x: 0, y: 0 },
-            rotation: { x: 0, y: 0 } 
-        };
-
-        let scene, camera, renderer, composer;
-        let mainGroup; 
-        let clock = new THREE.Clock();
-        let particleSystem = []; 
-        let photoMeshGroup = new THREE.Group();
-        let handLandmarker, video, webcamCanvas, webcamCtx;
-        let caneTexture; 
-
-        async function init() {
-            initThree();
-            setupEnvironment(); 
-            setupLights();
-            createTextures();
-            createParticles(); 
-            createDust();     
-            createDefaultPhotos();
-            setupPostProcessing();
-            setupEvents();
-            await initMediaPipe();
-            
-            const loader = document.getElementById('loader');
-            loader.style.opacity = 0;
-            setTimeout(() => loader.remove(), 800);
-
-            animate();
-        }
-
-        function initThree() {
-            const container = document.getElementById('canvas-container');
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(CONFIG.colors.bg);
-            scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.01); 
-
-            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, CONFIG.camera.z); 
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.toneMapping = THREE.ReinhardToneMapping; 
-            renderer.toneMappingExposure = 2.2; 
-            container.appendChild(renderer.domElement);
-
-            mainGroup = new THREE.Group();
-            scene.add(mainGroup);
-        }
-
-        function setupEnvironment() {
-            const pmremGenerator = new THREE.PMREMGenerator(renderer);
-            scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-        }
-
-        function setupLights() {
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambient);
-
-            const innerLight = new THREE.PointLight(0xffaa00, 2, 20);
-            innerLight.position.set(0, 5, 0);
-            mainGroup.add(innerLight);
-
-            const spotGold = new THREE.SpotLight(0xffcc66, 1200);
-            spotGold.position.set(30, 40, 40);
-            spotGold.angle = 0.5;
-            spotGold.penumbra = 0.5;
-            scene.add(spotGold);
-
-            const spotBlue = new THREE.SpotLight(0x6688ff, 600);
-            spotBlue.position.set(-30, 20, -30);
-            scene.add(spotBlue);
-            
-            const fill = new THREE.DirectionalLight(0xffeebb, 0.8);
-            fill.position.set(0, 0, 50);
-            scene.add(fill);
-        }
-
-        function setupPostProcessing() {
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.7; 
-            bloomPass.strength = 0.45; 
-            bloomPass.radius = 0.4;
-
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-        }
-
-        function createTextures() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0,0,128,128);
-            ctx.fillStyle = '#880000'; 
-            ctx.beginPath();
-            for(let i=-128; i<256; i+=32) {
-                ctx.moveTo(i, 0); ctx.lineTo(i+32, 128); ctx.lineTo(i+16, 128); ctx.lineTo(i-16, 0);
-            }
-            ctx.fill();
-            caneTexture = new THREE.CanvasTexture(canvas);
-            caneTexture.wrapS = THREE.RepeatWrapping;
-            caneTexture.wrapT = THREE.RepeatWrapping;
-            caneTexture.repeat.set(3, 3);
-        }
-
-        class Particle {
-            constructor(mesh, type, isDust = false) {
-                this.mesh = mesh;
-                this.type = type;
-                this.isDust = isDust;
-                
-                this.posTree = new THREE.Vector3();
-                this.posScatter = new THREE.Vector3();
-                this.baseScale = mesh.scale.x; 
-
-                // Individual Spin Speed
-                // Photos spin slower to be readable
-                const speedMult = (type === 'PHOTO') ? 0.3 : 2.0;
-
-                this.spinSpeed = new THREE.Vector3(
-                    (Math.random() - 0.5) * speedMult,
-                    (Math.random() - 0.5) * speedMult,
-                    (Math.random() - 0.5) * speedMult
-                );
-
-                this.calculatePositions();
-            }
-
-            calculatePositions() {
-                // TREE: Tight Spiral
-                const h = CONFIG.particles.treeHeight;
-                const halfH = h / 2;
-                let t = Math.random(); 
-                t = Math.pow(t, 0.8); 
-                const y = (t * h) - halfH;
-                let rMax = CONFIG.particles.treeRadius * (1.0 - t); 
-                if (rMax < 0.5) rMax = 0.5;
-                const angle = t * 50 * Math.PI + Math.random() * Math.PI; 
-                const r = rMax * (0.8 + Math.random() * 0.4); 
-                this.posTree.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-
-                // SCATTER: 3D Sphere
-                let rScatter = this.isDust ? (12 + Math.random()*20) : (8 + Math.random()*12);
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                this.posScatter.set(
-                    rScatter * Math.sin(phi) * Math.cos(theta),
-                    rScatter * Math.sin(phi) * Math.sin(theta),
-                    rScatter * Math.cos(phi)
-                );
-            }
-
-            update(dt, mode, focusTargetMesh) {
-                let target = this.posTree;
-                
-                if (mode === 'SCATTER') target = this.posScatter;
-                else if (mode === 'FOCUS') {
-                    if (this.mesh === focusTargetMesh) {
-                        const desiredWorldPos = new THREE.Vector3(0, 2, 35);
-                        const invMatrix = new THREE.Matrix4().copy(mainGroup.matrixWorld).invert();
-                        target = desiredWorldPos.applyMatrix4(invMatrix);
-                    } else {
-                        target = this.posScatter;
-                    }
-                }
-
-                // Movement Easing
-                const lerpSpeed = (mode === 'FOCUS' && this.mesh === focusTargetMesh) ? 5.0 : 2.0; 
-                this.mesh.position.lerp(target, lerpSpeed * dt);
-
-                // Rotation Logic - CRITICAL: Ensure spin happens in Scatter
-                if (mode === 'SCATTER') {
-                    this.mesh.rotation.x += this.spinSpeed.x * dt;
-                    this.mesh.rotation.y += this.spinSpeed.y * dt;
-                    this.mesh.rotation.z += this.spinSpeed.z * dt; // Added Z for more natural tumble
-                } else if (mode === 'TREE') {
-                    // Reset rotations slowly
-                    this.mesh.rotation.x = THREE.MathUtils.lerp(this.mesh.rotation.x, 0, dt);
-                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, 0, dt);
-                    this.mesh.rotation.y += 0.5 * dt; 
-                }
-                
-                if (mode === 'FOCUS' && this.mesh === focusTargetMesh) {
-                    this.mesh.lookAt(camera.position); 
-                }
-
-                // Scale Logic
-                let s = this.baseScale;
-                if (this.isDust) {
-                    s = this.baseScale * (0.8 + 0.4 * Math.sin(clock.elapsedTime * 4 + this.mesh.id));
-                    if (mode === 'TREE') s = 0; 
-                } else if (mode === 'SCATTER' && this.type === 'PHOTO') {
-                    // Large preview size in scatter
-                    s = this.baseScale * 2.5; 
-                } else if (mode === 'FOCUS') {
-                    if (this.mesh === focusTargetMesh) s = 4.5; 
-                    else s = this.baseScale * 0.8; 
-                }
-                
-                this.mesh.scale.lerp(new THREE.Vector3(s,s,s), 4*dt);
-            }
-        }
-
-        // --- CREATION ---
-        function createParticles() {
-            const sphereGeo = new THREE.SphereGeometry(0.5, 32, 32); 
-            const boxGeo = new THREE.BoxGeometry(0.55, 0.55, 0.55); 
-            const curve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(0, 0.3, 0),
-                new THREE.Vector3(0.1, 0.5, 0), new THREE.Vector3(0.3, 0.4, 0)
-            ]);
-            const candyGeo = new THREE.TubeGeometry(curve, 16, 0.08, 8, false);
-
-            const goldMat = new THREE.MeshStandardMaterial({
-                color: CONFIG.colors.champagneGold,
-                metalness: 1.0, roughness: 0.1,
-                envMapIntensity: 2.0, 
-                emissive: 0x443300,   
-                emissiveIntensity: 0.3
-            });
-
-            const greenMat = new THREE.MeshStandardMaterial({
-                color: CONFIG.colors.deepGreen,
-                metalness: 0.2, roughness: 0.8,
-                emissive: 0x002200,
-                emissiveIntensity: 0.2 
-            });
-
-            const redMat = new THREE.MeshPhysicalMaterial({
-                color: CONFIG.colors.accentRed,
-                metalness: 0.3, roughness: 0.2, clearcoat: 1.0,
-                emissive: 0x330000
-            });
-            
-            const candyMat = new THREE.MeshStandardMaterial({ map: caneTexture, roughness: 0.4 });
-
-            for (let i = 0; i < CONFIG.particles.count; i++) {
-                const rand = Math.random();
-                let mesh, type;
-                
-                if (rand < 0.40) {
-                    mesh = new THREE.Mesh(boxGeo, greenMat);
-                    type = 'BOX';
-                } else if (rand < 0.70) {
-                    mesh = new THREE.Mesh(boxGeo, goldMat);
-                    type = 'GOLD_BOX';
-                } else if (rand < 0.92) {
-                    mesh = new THREE.Mesh(sphereGeo, goldMat);
-                    type = 'GOLD_SPHERE';
-                } else if (rand < 0.97) {
-                    mesh = new THREE.Mesh(sphereGeo, redMat);
-                    type = 'RED';
-                } else {
-                    mesh = new THREE.Mesh(candyGeo, candyMat);
-                    type = 'CANE';
-                }
-
-                const s = 0.4 + Math.random() * 0.5;
-                mesh.scale.set(s,s,s);
-                mesh.rotation.set(Math.random()*6, Math.random()*6, Math.random()*6);
-                
-                mainGroup.add(mesh);
-                particleSystem.push(new Particle(mesh, type, false));
-            }
-
-            const starGeo = new THREE.OctahedronGeometry(1.2, 0);
-            const starMat = new THREE.MeshStandardMaterial({
-                color: 0xffdd88, emissive: 0xffaa00, emissiveIntensity: 1.0,
-                metalness: 1.0, roughness: 0
-            });
-            const star = new THREE.Mesh(starGeo, starMat);
-            star.position.set(0, CONFIG.particles.treeHeight/2 + 1.2, 0);
-            mainGroup.add(star);
-            
-            mainGroup.add(photoMeshGroup);
-        }
-
-        function createDust() {
-            const geo = new THREE.TetrahedronGeometry(0.08, 0);
-            const mat = new THREE.MeshBasicMaterial({ color: 0xffeebb, transparent: true, opacity: 0.8 });
-            
-            for(let i=0; i<CONFIG.particles.dustCount; i++) {
-                 const mesh = new THREE.Mesh(geo, mat);
-                 mesh.scale.setScalar(0.5 + Math.random());
-                 mainGroup.add(mesh);
-                 particleSystem.push(new Particle(mesh, 'DUST', true));
-            }
-        }
-
-        function createDefaultPhotos() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#050505'; ctx.fillRect(0,0,512,512);
-            ctx.strokeStyle = '#eebb66'; ctx.lineWidth = 15; ctx.strokeRect(20,20,472,472);
-            ctx.font = '500 60px Times New Roman'; ctx.fillStyle = '#eebb66';
-            ctx.textAlign = 'center'; 
-            ctx.fillText("JOYEUX", 256, 230);
-            ctx.fillText("NOEL", 256, 300);
-            
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            addPhotoToScene(tex);
-        }
-
-        function addPhotoToScene(texture) {
-            const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05);
-            const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
-            const frame = new THREE.Mesh(frameGeo, frameMat);
-
-            const photoGeo = new THREE.PlaneGeometry(1.2, 1.2);
-            const photoMat = new THREE.MeshBasicMaterial({ map: texture });
-            const photo = new THREE.Mesh(photoGeo, photoMat);
-            photo.position.z = 0.04;
-
-            const group = new THREE.Group();
-            group.add(frame);
-            group.add(photo);
-            
-            const s = 0.8;
-            group.scale.set(s,s,s);
-            
-            photoMeshGroup.add(group);
-            particleSystem.push(new Particle(group, 'PHOTO', false));
-        }
-        
-        function handleImageUpload(e) {
-            const files = e.target.files;
-            if(!files.length) return;
-            Array.from(files).forEach(f => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    new THREE.TextureLoader().load(ev.target.result, (t) => {
-                        t.colorSpace = THREE.SRGBColorSpace;
-                        addPhotoToScene(t);
-                    });
-                }
-                reader.readAsDataURL(f);
-            });
-        }
-
-        // --- MEDIAPIPE ---
-        async function initMediaPipe() {
-            video = document.getElementById('webcam');
-            webcamCanvas = document.getElementById('webcam-preview');
-            webcamCtx = webcamCanvas.getContext('2d');
-            webcamCanvas.width = 160; webcamCanvas.height = 120;
-
-            const vision = await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-            );
-            handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numHands: 1
-            });
-            
-            if (navigator.mediaDevices?.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                video.addEventListener("loadeddata", predictWebcam);
-            }
-        }
-
-        let lastVideoTime = -1;
-        async function predictWebcam() {
-            if (video.currentTime !== lastVideoTime) {
-                lastVideoTime = video.currentTime;
-                if (handLandmarker) {
-                    const result = handLandmarker.detectForVideo(video, performance.now());
-                    processGestures(result);
-                }
-            }
-            requestAnimationFrame(predictWebcam);
-        }
-
-        function processGestures(result) {
-            if (result.landmarks && result.landmarks.length > 0) {
-                STATE.hand.detected = true;
-                const lm = result.landmarks[0];
-                STATE.hand.x = (lm[9].x - 0.5) * 2; 
-                STATE.hand.y = (lm[9].y - 0.5) * 2;
-
-                const thumb = lm[4]; const index = lm[8]; const wrist = lm[0];
-                const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
-                const tips = [lm[8], lm[12], lm[16], lm[20]];
-                let avgDist = 0;
-                tips.forEach(t => avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y));
-                avgDist /= 4;
-
-                if (pinchDist < 0.05) {
-                    if (STATE.mode !== 'FOCUS') {
-                        STATE.mode = 'FOCUS';
-                        const photos = particleSystem.filter(p => p.type === 'PHOTO');
-                        if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random()*photos.length)].mesh;
-                    }
-                } else if (avgDist < 0.25) {
-                    STATE.mode = 'TREE';
-                    STATE.focusTarget = null;
-                } else if (avgDist > 0.4) {
-                    STATE.mode = 'SCATTER';
-                    STATE.focusTarget = null;
-                }
-            } else {
-                STATE.hand.detected = false;
-            }
-        }
-
-        function setupEvents() {
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight);
-            });
-            document.getElementById('file-input').addEventListener('change', handleImageUpload);
-            
-            // Toggle UI logic - ONLY hide controls, keep title
-            window.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'h') {
-                    const controls = document.querySelector('.upload-wrapper');
-                    if (controls) controls.classList.toggle('ui-hidden');
-                }
-            });
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const dt = clock.getDelta();
-
-            // Rotation Logic
-            if (STATE.mode === 'SCATTER' && STATE.hand.detected) {
-                const targetRotY = STATE.hand.x * Math.PI * 0.9; 
-                const targetRotX = STATE.hand.y * Math.PI * 0.25;
-                STATE.rotation.y += (targetRotY - STATE.rotation.y) * 3.0 * dt;
-                STATE.rotation.x += (targetRotX - STATE.rotation.x) * 3.0 * dt;
-            } else {
-                if(STATE.mode === 'TREE') {
-                    STATE.rotation.y += 0.3 * dt;
-                    STATE.rotation.x += (0 - STATE.rotation.x) * 2.0 * dt;
-                } else {
-                     STATE.rotation.y += 0.1 * dt; 
-                }
-            }
-
-            mainGroup.rotation.y = STATE.rotation.y;
-            mainGroup.rotation.x = STATE.rotation.x;
-
-            particleSystem.forEach(p => p.update(dt, STATE.mode, STATE.focusTarget));
-            composer.render();
-        }
-
-        init();
-    </script>
-</body>
-</html>
+function render(){
+  const el=document.getElementById('content');
+  if(tab==='overview')el.innerHTML=renderOverview();
+  else if(tab==='resources')el.innerHTML=renderResources();
+  else el.innerHTML=renderTracker();
+  bind();
+}
+function bind(){
+  const dp=document.getElementById('dp');
+  if(dp)dp.addEventListener('change',async e=>{selDate=e.target.value;await load();render();});
+  const na=document.getElementById('na');
+  if(na)na.addEventListener('input',e=>{notes=e.target.value;});
+}
+async function load(){
+  try{
+    const r=await window.storage.get('ky:'+selDate);
+    if(r){const d=JSON.parse(r.value);ckd=d.t||{};notes=d.n||'';}
+    else{ckd={};notes='';}
+  }catch{ckd={};notes='';}
+}
+async function saveData(){
+  const na=document.getElementById('na');
+  if(na)notes=na.value;
+  try{
+    await window.storage.set('ky:'+selDate,JSON.stringify({t:ckd,n:notes}));
+    status='已保存 ✓';
+  }catch{status='保存失败，请重试';}
+  render();
+  setTimeout(()=>{status='';render();},2500);
+}
+(async()=>{await load();render();})();
+</script>
